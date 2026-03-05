@@ -125,12 +125,5 @@ impl State {
         };
 
         go_to_swap_layout(&target_layout);
-
-        if let Some(active_tab) = self.active_tab {
-            let tab_state = self.tabs.entry(active_tab).or_default();
-            tab_state.active_layout = Some(target_layout);
-            tab_state.last_bits = Some(resolved_bits);
-            tab_state.is_dirty = false;
-        }
     }
 }
