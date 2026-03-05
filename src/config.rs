@@ -134,20 +134,22 @@ impl PluginConfig {
         let mut bits_to_state = BTreeMap::new();
         for (name, layout_features) in layout_defs {
             let mut bits = 0u64;
-            for (feature_name, bit_index) in &feature_to_bit {
-                if *layout_features.get(feature_name).unwrap_or(&false) {
-                    bits |= 1u64 << bit_index;
+            for feature_name in feature_order.iter() {
+                let enabled = layout_features
+                    .get(feature_name)
+                    .ok_or_else(|| format!("layout '{name}' missing explicit value for feature '{feature_name}' - all features must be explicitly set in all layouts"))?;
+                if *enabled {
+                    bits |= 1u64 << feature_to_bit[feature_name];
                 }
             }
 
             if let Some(existing) = bits_to_state.get(&bits) {
-                eprintln!(
-                    "zjide-manager: duplicate bitmask {bits} for layouts {existing} and {name}",
-                );
-            } else {
-                bits_to_state.insert(bits, name.clone());
+                return Err(format!(
+                    "duplicate bitmask {bits} for layouts '{existing}' and '{name}'"
+                ));
             }
 
+            bits_to_state.insert(bits, name.clone());
             state_bits.insert(name, bits);
         }
 
