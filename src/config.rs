@@ -6,6 +6,7 @@ use std::collections::{BTreeMap, BTreeSet};
 pub struct PluginConfig {
     pub default_layout: Option<String>,
     pub startup_layout: Option<String>,
+    pub editor_pane_name: Option<String>,
     pub feature_to_bit: BTreeMap<String, u8>,
     pub state_bits: BTreeMap<String, u64>,
     pub bits_to_state: BTreeMap<u64, String>,
@@ -84,6 +85,7 @@ impl PluginConfig {
     pub fn parse(raw: &BTreeMap<String, String>) -> Result<Self, String> {
         let mut default_layout = None;
         let mut startup_layout = None;
+        let mut editor_pane_name = None;
         let mut layout_defs: Vec<(String, BTreeMap<String, bool>)> = Vec::new();
         let mut commands = BTreeMap::new();
 
@@ -95,6 +97,11 @@ impl PluginConfig {
 
             if key == "startup_layout" {
                 startup_layout = Some(value.trim().to_string());
+                continue;
+            }
+
+            if key == "editor_pane_name" {
+                editor_pane_name = Some(value.trim().to_string());
                 continue;
             }
 
@@ -165,6 +172,7 @@ impl PluginConfig {
         Ok(Self {
             default_layout,
             startup_layout,
+            editor_pane_name,
             feature_to_bit,
             state_bits,
             bits_to_state,

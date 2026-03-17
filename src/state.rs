@@ -1,6 +1,6 @@
 use crate::config::{BitResolver, PluginConfig, StateResolver};
 use std::collections::BTreeMap;
-use zellij_tile::prelude::{go_to_swap_layout, TabInfo};
+use zellij_tile::prelude::{focus_pane_with_id, go_to_swap_layout, PaneId, PaneManifest, TabInfo};
 
 /// Represents the state of a single tab
 #[derive(Default, Debug, Clone)]
@@ -16,6 +16,7 @@ pub struct State {
     pub tabs: BTreeMap<usize, TabState>,
     pub active_tab: Option<usize>,
     pub startup_applied: bool,
+    pub editor_pane_id: Option<PaneId>,
 }
 
 impl Default for State {
@@ -25,6 +26,7 @@ impl Default for State {
             tabs: BTreeMap::new(),
             active_tab: None,
             startup_applied: false,
+            editor_pane_id: None,
         }
     }
 }
@@ -88,6 +90,37 @@ impl State {
                 }
             }
             self.startup_applied = true;
+        }
+    }
+
+    pub fn on_pane_update(&mut self, manifest: PaneManifest) {
+        let editor_pane_name = self
+            .config
+            .as_ref()
+            .and_then(|c| c.editor_pane_name.as_ref());
+
+        self.editor_pane_id = None;
+
+        if let Some(editor_pane_name) = editor_pane_name {
+            if let Some(active_tab) = self.active_tab {
+                if let Some(panes) = manifest.panes.get(&active_tab) {
+                    for pane in panes {
+                        if pane.title == *editor_pane_name {
+                            self.editor_pane_id = Some(match pane.is_plugin {
+                                true => PaneId::Plugin(pane.id),
+                                false => PaneId::Terminal(pane.id),
+                            });
+                            return;
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    pub fn focus_editor(&self) {
+        if let Some(pane_id) = self.editor_pane_id {
+            focus_pane_with_id(pane_id, true, true);
         }
     }
 

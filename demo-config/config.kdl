@@ -290,6 +290,7 @@ plugins {
     zjide-manager location="file:/home/gence/probe/zjide-manager/target/wasm32-wasip1/debug/zjide-manager.wasm" {
         // feature bitmask table
         default_layout "BASE"
+        editor_pane_name "Helix"
         layout.BASE "sidebar=true,terminal=true"
         layout.no_sidebar "sidebar=false,terminal=true"
         layout.no_terminal "sidebar=true,terminal=false"

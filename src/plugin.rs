@@ -17,7 +17,7 @@ impl PluginLifecycle for State {
             PermissionType::ReadApplicationState,
             PermissionType::ChangeApplicationState,
         ]);
-        subscribe(&[EventType::TabUpdate]);
+        subscribe(&[EventType::TabUpdate, EventType::PaneUpdate]);
 
         match PluginConfig::parse(&configuration) {
             Ok(config) => {
@@ -33,11 +33,19 @@ impl PluginLifecycle for State {
                 self.on_tab_update(tabs);
                 false
             }
+            Event::PaneUpdate(manifest) => {
+                self.on_pane_update(manifest);
+                false
+            }
             _ => false,
         }
     }
 
     fn handle_pipe(&mut self, pipe_message: PipeMessage) -> bool {
+        if pipe_message.name == "focus-editor" {
+            self.focus_editor();
+            return false;
+        }
         self.apply_command(&pipe_message.name);
         false
     }
