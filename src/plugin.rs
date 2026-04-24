@@ -48,6 +48,11 @@ impl PluginLifecycle for State {
                     self.focus_pane(&payload);
                 }
             }
+            "focus-or-toggle-pane" => {
+                if let Some(payload) = pipe_message.payload {
+                    self.focus_or_toggle_pane(&payload);
+                }
+            }
             name => self.apply_command(name),
         }
         false

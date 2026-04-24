@@ -91,6 +91,65 @@ impl State {
         }
     }
 
+    /// Focus a pane, toggling its feature visibility if not currently enabled
+    pub fn focus_or_toggle_pane(&mut self, pane_name: &str) {
+        let Some(config) = self.config.as_ref() else {
+            eprintln!("zjide-manager: plugin not configured yet");
+            return;
+        };
+
+        // Find feature that maps to this pane using existing feature_to_pane
+        let feature_name = config.feature_to_pane.iter()
+            .find(|(_, pane)| *pane == pane_name)
+            .map(|(feature, _)| feature.clone());
+
+        let Some(feature_name) = feature_name else {
+            // No feature mapping, just try to focus the pane (fallback to focus-pane behavior)
+            self.focus_pane(pane_name);
+            return;
+        };
+
+        // Check current bits to see if the feature is enabled
+        let Some(current_bits) = self.current_bits(config) else {
+            eprintln!("zjide-manager: unable to determine current layout bits");
+            return;
+        };
+
+        let Some(feature_bit) = config.bit_for_feature(&feature_name) else {
+            eprintln!("zjide-manager: unknown feature '{feature_name}'");
+            return;
+        };
+
+        let feature_enabled = (current_bits & feature_bit) != 0;
+
+        if feature_enabled {
+            // Feature is enabled, just focus the pane
+            self.focus_pane(pane_name);
+        } else {
+            // Feature is not enabled, enable it (show) and then focus
+            let target_bits = current_bits | feature_bit;
+
+            let target_layout = if let Some(layout) = config.bits_to_state.get(&target_bits) {
+                layout.clone()
+            } else if let Some((layout, _)) = config.closest_state(target_bits) {
+                eprintln!(
+                    "zjide-manager: layout for mask {target_bits} missing, falling back to {layout}"
+                );
+                layout
+            } else {
+                eprintln!(
+                    "zjide-manager: no layouts available to satisfy feature '{feature_name}'"
+                );
+                return;
+            };
+
+            self.navigate_to_layout(&target_layout);
+
+            // Focus the pane after navigation
+            self.focus_pane(pane_name);
+        }
+    }
+
     /// Get the current bit pattern for the active tab
     fn current_bits(&self, config: &PluginConfig) -> Option<u64> {
         if let Some(tab_state) = self.get_active_tab_state() {
