@@ -69,14 +69,54 @@ bind "Alt f" {
 }
 ```
 
+### Smart Focus-Or-Toggle via Pipe
+
+The `focus-or-toggle-pane` pipe message provides intelligent focus management:
+
+- **If the pane's feature is visible**: Simply focuses the pane
+- **If the pane's feature is hidden**: Enables the feature (shows it) then focuses the pane
+
+This is useful for workflows like toggling sidebar from helix, or returning focus to editor from yazi:
+
+```kdl
+// Toggle sidebar visibility and focus it from helix
+bind "Alt e" {
+    MessagePlugin "zjide-manager" {
+        name "focus-or-toggle-pane"
+        payload "File-Explorer"
+    }
+}
+```
+
+**From terminal (for use in helix/yazi commands):**
+```bash
+# Toggle sidebar and focus it
+zellij pipe --plugin file:/path/to/zjide-manager.wasm --name focus-or-toggle-pane -- "File-Explorer"
+
+# Focus terminal (toggle if hidden)
+zellij pipe --plugin file:/path/to/zjide-manager.wasm --name focus-or-toggle-pane -- "Terminal"
+
+# Return to editor from yazi (just focus, no toggle needed)
+zellij pipe --plugin file:/path/to/zjide-manager.wasm --name focus-pane -- "Editor"
+```
+
 ### Keybindings
 
 Keybindings send messages to the plugin to trigger state changes:
 
 ```kdl
+// Traditional toggle (changes layout, focuses only if newly enabled)
 bind "Alt e" {
     MessagePlugin "zjide-manager" {
         name "toggle_sidebar"
+    }
+}
+
+// Smart toggle+focus (focuses if visible, shows then focuses if hidden)
+bind "Alt e" {
+    MessagePlugin "zjide-manager" {
+        name "focus-or-toggle-pane"
+        payload "File-Explorer"
     }
 }
 ```
@@ -114,14 +154,30 @@ ZELLIJ_CONFIG=demo-config/config.kdl zellij -l demo-config/layouts/ide.kdl
 
 ## Release
 
-To release manually:
+Releases are automatically built and published to GitHub Releases:
 
 ```bash
-# Build release version
+# Build release version locally
 cargo build --release --target wasm32-wasip1
 
 # The wasm is at:
 # target/wasm32-wasip1/release/zjide-manager.wasm
+```
 
-# Share this file with users
+Download pre-built releases from: https://github.com/GenceErdagi/zjide-manager/releases
+
+**Using released version:**
+```kdl
+plugins {
+    zjide-manager location="https://github.com/GenceErdagi/zjide-manager/releases/download/v0.2.0/zjide-manager.wasm" {
+        default_layout "BASE"
+        pane_name.editor   "Editor"
+        pane_name.terminal "Terminal"
+        pane_name.sidebar  "File-Explorer"
+        layout.BASE        "sidebar=true, terminal=true"
+        layout.zen         "sidebar=false, terminal=false"
+        trigger.toggle_sidebar  "toggle sidebar"
+        trigger.toggle_terminal "toggle terminal"
+    }
+}
 ```
